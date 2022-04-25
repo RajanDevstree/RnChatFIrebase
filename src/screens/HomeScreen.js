@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
-import { List, Divider } from 'react-native-paper';
+import React, {useState, useEffect} from 'react';
+import {View, StyleSheet, FlatList, TouchableOpacity} from 'react-native';
+import {List, Divider} from 'react-native-paper';
 import firestore from '@react-native-firebase/firestore';
 import Loading from '../components/Loading';
 import useStatsBar from '../utils/useStatusBar';
 
-export default function HomeScreen({ navigation }) {
+export default function HomeScreen({navigation}) {
   useStatsBar('light-content');
 
   const [threads, setThreads] = useState([]);
@@ -26,11 +26,13 @@ export default function HomeScreen({ navigation }) {
             name: '',
 
             latestMessage: {
-              text: ''
+              text: '',
             },
-            ...documentSnapshot.data()
+            ...documentSnapshot.data(),
           };
         });
+
+        console.log(threads);
 
         setThreads(threads);
 
@@ -55,10 +57,9 @@ export default function HomeScreen({ navigation }) {
         data={threads}
         keyExtractor={item => item._id}
         ItemSeparatorComponent={() => <Divider />}
-        renderItem={({ item }) => (
+        renderItem={({item}) => (
           <TouchableOpacity
-            onPress={() => navigation.navigate('Room', { thread: item })}
-          >
+            onPress={() => navigation.navigate('Room', {thread: item})}>
             <List.Item
               title={item.name}
               description={item.latestMessage.text}
@@ -77,12 +78,12 @@ export default function HomeScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     backgroundColor: '#f5f5f5',
-    flex: 1
+    flex: 1,
   },
   listTitle: {
-    fontSize: 22
+    fontSize: 22,
   },
   listDescription: {
-    fontSize: 16
-  }
+    fontSize: 16,
+  },
 });

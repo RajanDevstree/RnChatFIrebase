@@ -1,22 +1,22 @@
-import React, { useState, useContext, useEffect } from 'react';
+import React, {useState, useContext, useEffect} from 'react';
 import {
   GiftedChat,
   Bubble,
   Send,
-  SystemMessage
+  SystemMessage,
 } from 'react-native-gifted-chat';
-import { ActivityIndicator, View, StyleSheet } from 'react-native';
-import { IconButton } from 'react-native-paper';
-import { AuthContext } from '../navigation/AuthProvider';
+import {ActivityIndicator, View, StyleSheet} from 'react-native';
+import {IconButton} from 'react-native-paper';
+import {AuthContext} from '../navigation/AuthProvider';
 import firestore from '@react-native-firebase/firestore';
 import useStatsBar from '../utils/useStatusBar';
 
-export default function RoomScreen({ route }) {
+export default function RoomScreen({route}) {
   useStatsBar('light-content');
 
   const [messages, setMessages] = useState([]);
-  const { thread } = route.params;
-  const { user } = useContext(AuthContext);
+  const {thread} = route.params;
+  const {user} = useContext(AuthContext);
   const currentUser = user.toJSON();
 
   async function handleSend(messages) {
@@ -31,8 +31,8 @@ export default function RoomScreen({ route }) {
         createdAt: new Date().getTime(),
         user: {
           _id: currentUser.uid,
-          email: currentUser.email
-        }
+          email: currentUser.email,
+        },
       });
 
     await firestore()
@@ -42,10 +42,10 @@ export default function RoomScreen({ route }) {
         {
           latestMessage: {
             text,
-            createdAt: new Date().getTime()
-          }
+            createdAt: new Date().getTime(),
+          },
         },
-        { merge: true }
+        {merge: true},
       );
   }
 
@@ -59,17 +59,19 @@ export default function RoomScreen({ route }) {
         const messages = querySnapshot.docs.map(doc => {
           const firebaseData = doc.data();
 
+          debugger;
+
           const data = {
             _id: doc.id,
             text: '',
             createdAt: new Date().getTime(),
-            ...firebaseData
+            ...firebaseData,
           };
 
           if (!firebaseData.system) {
             data.user = {
               ...firebaseData.user,
-              name: firebaseData.user.email
+              name: firebaseData.user.email,
             };
           }
 
@@ -89,13 +91,13 @@ export default function RoomScreen({ route }) {
         {...props}
         wrapperStyle={{
           right: {
-            backgroundColor: '#6646ee'
-          }
+            backgroundColor: '#0d9eff',
+          },
         }}
         textStyle={{
           right: {
-            color: '#fff'
-          }
+            color: '#fff',
+          },
         }}
       />
     );
@@ -104,7 +106,7 @@ export default function RoomScreen({ route }) {
   function renderLoading() {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size='large' color='#6646ee' />
+        <ActivityIndicator size="large" color="#0d9eff" />
       </View>
     );
   }
@@ -113,7 +115,7 @@ export default function RoomScreen({ route }) {
     return (
       <Send {...props}>
         <View style={styles.sendingContainer}>
-          <IconButton icon='send-circle' size={32} color='#6646ee' />
+          <IconButton icon="send-circle" size={32} color="#0d9eff" />
         </View>
       </Send>
     );
@@ -122,7 +124,7 @@ export default function RoomScreen({ route }) {
   function scrollToBottomComponent() {
     return (
       <View style={styles.bottomComponentContainer}>
-        <IconButton icon='chevron-double-down' size={36} color='#6646ee' />
+        <IconButton icon="chevron-double-down" size={36} color="#0d9eff" />
       </View>
     );
   }
@@ -141,8 +143,8 @@ export default function RoomScreen({ route }) {
     <GiftedChat
       messages={messages}
       onSend={handleSend}
-      user={{ _id: currentUser.uid }}
-      placeholder='Type your message here...'
+      user={{_id: currentUser.uid}}
+      placeholder="Type your message here..."
       alwaysShowSend
       showUserAvatar
       scrollToBottom
@@ -159,24 +161,24 @@ const styles = StyleSheet.create({
   loadingContainer: {
     flex: 1,
     alignItems: 'center',
-    justifyContent: 'center'
+    justifyContent: 'center',
   },
   sendingContainer: {
     justifyContent: 'center',
-    alignItems: 'center'
+    alignItems: 'center',
   },
   bottomComponentContainer: {
     justifyContent: 'center',
-    alignItems: 'center'
+    alignItems: 'center',
   },
   systemMessageWrapper: {
-    backgroundColor: '#6646ee',
+    backgroundColor: '#0d9eff',
     borderRadius: 4,
-    padding: 5
+    padding: 5,
   },
   systemMessageText: {
     fontSize: 14,
     color: '#fff',
-    fontWeight: 'bold'
-  }
+    fontWeight: 'bold',
+  },
 });
