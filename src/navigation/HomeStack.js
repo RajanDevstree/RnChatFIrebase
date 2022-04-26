@@ -54,6 +54,8 @@ function ChatApp() {
         name="Room"
         component={RoomScreen}
         options={({route}) => ({
+          headerShown: false,
+
           title: route.params.thread.name,
         })}
       />
