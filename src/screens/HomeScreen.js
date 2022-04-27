@@ -20,10 +20,30 @@ import storage from '@react-native-firebase/storage';
 import * as Progress from 'react-native-progress';
 import Video from 'react-native-video';
 import videoData from '../video/test.mp4';
+import {createThumbnail} from 'react-native-create-thumbnail';
+import AudioRecorderPlayer, {
+  AVEncoderAudioQualityIOSType,
+  AVEncodingOption,
+  AudioEncoderAndroidType,
+  AudioSet,
+  AudioSourceAndroidType,
+} from 'react-native-audio-recorder-player';
+import RNFetchBlob from 'rn-fetch-blob';
 
 export default function HomeScreen({navigation}) {
   useStatsBar('light-content');
   const videoPlayer = React.useRef();
+  var audioRecorderPlayer = new AudioRecorderPlayer();
+  audioRecorderPlayer.setSubscriptionDuration(0.09);
+  const [audioState, setAudioState] = useState({
+    isLoggingIn: false,
+    recordSecs: 0,
+    recordTime: '00:00:00',
+    currentPositionSec: 0,
+    currentDurationSec: 0,
+    playTime: '00:00:00',
+    duration: '00:00:00',
+  });
 
   const [threads, setThreads] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -130,9 +150,132 @@ export default function HomeScreen({navigation}) {
     }
   };
 
+  const onStartRecord = async () => {
+    const dirs = RNFetchBlob.fs.dirs;
+    const path = Platform.select({
+      ios: `${new Date().getTime()}audio.m4a`,
+      android: `${dirs.CacheDir}/${new Date().getTime()}audio.mp3`,
+    });
+    const audioSet = {
+      AudioEncoderAndroid: AudioEncoderAndroidType.AAC,
+      AudioSourceAndroid: AudioSourceAndroidType.MIC,
+      AVEncoderAudioQualityKeyIOS: AVEncoderAudioQualityIOSType.high,
+      AVNumberOfChannelsKeyIOS: 2,
+      AVFormatIDKeyIOS: AVEncodingOption.aac,
+    };
+    console.log('audioSet', audioSet);
+    let uri = await audioRecorderPlayer.startRecorder(path, audioSet);
+    audioRecorderPlayer.addRecordBackListener(e => {
+      console.log(e);
+      console.log(e.currentPosition);
+      console.log(audioRecorderPlayer.mmssss(Math.floor(e.currentPosition)));
+      // this.setState({
+      //   recordSecs: e.current_position,
+      //   recordTime: this.audioRecorderPlayer.mmssss(
+      //     Math.floor(e.current_position),
+      //   ),
+      // });
+    });
+    console.log(`uri: ${uri}`);
+  };
+
+  const onStopRecord = async () => {
+    let result = await audioRecorderPlayer.stopRecorder();
+    audioRecorderPlayer.removeRecordBackListener();
+    console.log(result);
+    uploadAudio(result);
+  };
+
+  const uploadAudio = async fileLocalPath => {
+    if (fileLocalPath) {
+      const filename = fileLocalPath.substring(
+        fileLocalPath.lastIndexOf('/') + 1,
+      );
+      const uploadUri =
+        Platform.OS === 'ios'
+          ? fileLocalPath.replace('file:////', '')
+          : fileLocalPath;
+      const task = storage()
+        .ref(`tytyty/audios/${filename}`)
+        .putFile(uploadUri);
+      task.on('state_changed', snapshot => {});
+      try {
+        task
+          .then(() => {
+            Alert.alert(
+              'Audio uploaded!',
+              'Your audio has been uploaded to Firebase Cloud Storage!',
+            );
+
+            storage()
+              .ref(`tytyty/audios/${filename}`)
+              .getDownloadURL()
+              .then(downloadUrl => {
+                console.log(downloadUrl, 'DDDDDDDDDDDDDDDDDDDDDDDDDDDD');
+              });
+
+            console.log('audio uploaded to the bucket!');
+          })
+          .catch(e => {
+            alert(`${e} EEEEEE`);
+          });
+      } catch (e) {
+        console.error(e);
+      }
+    }
+  };
+
+  const onStartPlay = async e => {
+    const path =
+      'https://firebasestorage.googleapis.com/v0/b/ioschattestthenremove.appspot.com/o/tytyty%2Faudios%2F1651065823683audio.mp3?alt=media&token=0caa38a2-bf88-4ec1-bc0e-8e914eced4e5';
+    const msg = await audioRecorderPlayer.startPlayer(path);
+    audioRecorderPlayer.setVolume(1.0);
+    audioRecorderPlayer.addPlayBackListener(e => {
+      if (e.current_position === e.duration) {
+        console.log('finished');
+        audioRecorderPlayer.stopPlayer();
+      }
+      console.log(e, 'PlayTime');
+      // this.setState({
+      //   currentPositionSec: e.current_position,
+      //   currentDurationSec: e.duration,
+      //   playTime: this.audioRecorderPlayer.mmssss(
+      //     Math.floor(e.current_position),
+      //   ),
+      //   duration: this.audioRecorderPlayer.mmssss(Math.floor(e.duration)),
+      // });
+    });
+  };
+
   return (
     <View style={styles.container}>
+      {/* <Image
+        style={{width: 150, height: 150}}
+        source={{
+          uri: 'file:///data/user/0/com.rnchatfirestoreapp/cache/thumbnails/thumb-9138c0aa-1c56-4262-9ceb-0917be3e9eba',
+        }}
+      />
       <Button
+        title="record start"
+        onPress={() => {
+          onStartRecord();
+        }}
+      />
+      <Button
+        title="record stop"
+        onPress={() => {
+          onStopRecord();
+        }}
+      />
+      <Button
+        title="play"
+        onPress={() => {
+          onStartPlay();
+        }}
+      />
+      <Button title="stop" onPress={() => {}} /> */}
+
+      {/* <Button
         title="Press Button"
         onPress={() => {
           selectImage();
@@ -155,7 +298,7 @@ export default function HomeScreen({navigation}) {
           bottom: 0,
           right: 0,
         }}
-      />
+      /> */}
       {/* <View style={styles.imageContainer}>
         <TouchableOpacity style={styles.selectButton} onPress={selectImage}>
           <Text style={styles.buttonText}>Pick an image</Text>
