@@ -509,14 +509,6 @@ function RoomScreen({route, navigation}) {
       setRecordingTime(
         audioRecorderPlayer.mmssss(Math.floor(e.currentPosition)),
       );
-      // this.setState({
-      //   currentPositionSec: e.current_position,
-      //   currentDurationSec: e.duration,
-      //   playTime: this.audioRecorderPlayer.mmssss(
-      //     Math.floor(e.current_position),
-      //   ),
-      //   duration: this.audioRecorderPlayer.mmssss(Math.floor(e.duration)),
-      // });
     });
   };
 
