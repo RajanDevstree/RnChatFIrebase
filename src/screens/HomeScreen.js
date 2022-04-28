@@ -28,21 +28,13 @@ import AudioRecorderPlayer, {
   AudioSourceAndroidType,
 } from 'react-native-audio-recorder-player';
 import RNFetchBlob from 'rn-fetch-blob';
+import MapView, {Marker} from 'react-native-maps';
 
- function HomeScreen({navigation}) {
+function HomeScreen({navigation}) {
   useStatsBar('light-content');
   const videoPlayer = React.useRef();
   var audioRecorderPlayer = new AudioRecorderPlayer();
   audioRecorderPlayer.setSubscriptionDuration(0.09);
-  const [audioState, setAudioState] = useState({
-    isLoggingIn: false,
-    recordSecs: 0,
-    recordTime: '00:00:00',
-    currentPositionSec: 0,
-    currentDurationSec: 0,
-    playTime: '00:00:00',
-    duration: '00:00:00',
-  });
 
   const [threads, setThreads] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -316,6 +308,28 @@ import RNFetchBlob from 'rn-fetch-blob';
           </TouchableOpacity>
         )}
       </View> */}
+      {/* <View style={styles.containers}>
+        <MapView
+          style={styles.mapStyle}
+          initialRegion={{
+            latitude: 37.78825,
+            longitude: -122.4324,
+            latitudeDelta: 0.0922,
+            longitudeDelta: 0.0421,
+          }}
+          customMapStyle={mapStyle}>
+          <Marker
+            draggable
+            coordinate={{
+              latitude: 37.78825,
+              longitude: -122.4324,
+            }}
+            onDragEnd={e => alert(JSON.stringify(e.nativeEvent.coordinate))}
+            title={'Test Marker'}
+            description={'This is a description of the marker'}
+          />
+        </MapView>
+      </View> */}
 
       <FlatList
         data={threads}
@@ -339,6 +353,87 @@ import RNFetchBlob from 'rn-fetch-blob';
   );
 }
 export default HomeScreen;
+
+const mapStyle = [
+  {elementType: 'geometry', stylers: [{color: '#242f3e'}]},
+  {elementType: 'labels.text.fill', stylers: [{color: '#746855'}]},
+  {elementType: 'labels.text.stroke', stylers: [{color: '#242f3e'}]},
+  {
+    featureType: 'administrative.locality',
+    elementType: 'labels.text.fill',
+    stylers: [{color: '#d59563'}],
+  },
+  {
+    featureType: 'poi',
+    elementType: 'labels.text.fill',
+    stylers: [{color: '#d59563'}],
+  },
+  {
+    featureType: 'poi.park',
+    elementType: 'geometry',
+    stylers: [{color: '#263c3f'}],
+  },
+  {
+    featureType: 'poi.park',
+    elementType: 'labels.text.fill',
+    stylers: [{color: '#6b9a76'}],
+  },
+  {
+    featureType: 'road',
+    elementType: 'geometry',
+    stylers: [{color: '#38414e'}],
+  },
+  {
+    featureType: 'road',
+    elementType: 'geometry.stroke',
+    stylers: [{color: '#212a37'}],
+  },
+  {
+    featureType: 'road',
+    elementType: 'labels.text.fill',
+    stylers: [{color: '#9ca5b3'}],
+  },
+  {
+    featureType: 'road.highway',
+    elementType: 'geometry',
+    stylers: [{color: '#746855'}],
+  },
+  {
+    featureType: 'road.highway',
+    elementType: 'geometry.stroke',
+    stylers: [{color: '#1f2835'}],
+  },
+  {
+    featureType: 'road.highway',
+    elementType: 'labels.text.fill',
+    stylers: [{color: '#f3d19c'}],
+  },
+  {
+    featureType: 'transit',
+    elementType: 'geometry',
+    stylers: [{color: '#2f3948'}],
+  },
+  {
+    featureType: 'transit.station',
+    elementType: 'labels.text.fill',
+    stylers: [{color: '#d59563'}],
+  },
+  {
+    featureType: 'water',
+    elementType: 'geometry',
+    stylers: [{color: '#17263c'}],
+  },
+  {
+    featureType: 'water',
+    elementType: 'labels.text.fill',
+    stylers: [{color: '#515c6d'}],
+  },
+  {
+    featureType: 'water',
+    elementType: 'labels.text.stroke',
+    stylers: [{color: '#17263c'}],
+  },
+];
 
 const styles = StyleSheet.create({
   container: {
@@ -384,5 +479,24 @@ const styles = StyleSheet.create({
   imageBox: {
     width: 300,
     height: 300,
+  },
+  containers: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 1000,
+    height: 400,
+    width: 400,
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+  },
+  map: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  mapStyle: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 1000,
   },
 });

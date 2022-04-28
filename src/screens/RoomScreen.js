@@ -17,6 +17,7 @@ import {
   Image,
   Modal,
   Dimensions,
+  Linking,
 } from 'react-native';
 import Toast from 'react-native-simple-toast';
 
@@ -25,7 +26,7 @@ import {AuthContext} from '../navigation/AuthProvider';
 import firestore from '@react-native-firebase/firestore';
 import useStatsBar from '../utils/useStatusBar';
 import {Menu} from 'react-native-paper';
-import {Appbar} from 'react-native-paper';
+import {Appbar, Avatar} from 'react-native-paper';
 
 import {launchCamera, launchImageLibrary} from 'react-native-image-picker';
 import storage from '@react-native-firebase/storage';
@@ -35,6 +36,9 @@ import {createThumbnail} from 'react-native-create-thumbnail';
 
 import Foundation from 'react-native-vector-icons/Foundation';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import FontAwesome from 'react-native-vector-icons/FontAwesome';
+import Geolocation from 'react-native-geolocation-service';
+
 import AudioRecorderPlayer, {
   AVEncoderAudioQualityIOSType,
   AVEncodingOption,
@@ -43,6 +47,7 @@ import AudioRecorderPlayer, {
   AudioSourceAndroidType,
 } from 'react-native-audio-recorder-player';
 import RNFetchBlob from 'rn-fetch-blob';
+import MapView, {Marker} from 'react-native-maps';
 
 const audioRecorderPlayer = new AudioRecorderPlayer();
 
@@ -60,6 +65,8 @@ function RoomScreen({route, navigation}) {
   const [recording, setRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(null);
   const [playSoundState, setPlaySoundState] = useState(false);
+  const [geoPermissions, setGeoPermissions] = useState(null);
+  const [mapModal, showMapModal] = useState(false);
 
   const {thread} = route.params;
   const {user} = useContext(AuthContext);
@@ -71,12 +78,13 @@ function RoomScreen({route, navigation}) {
     imageVideoUrl = '',
     isVideo = false,
     isAudio = false,
+    isLocation = false,
   ) {
     debugger;
     const text = isImage ? '' : messages[0].text;
 
     let MessageObj = {
-      text: isImage || isVideo || isAudio ? '' : text,
+      text: isImage || isVideo || isAudio || isLocation ? '' : text,
       createdAt: new Date().getTime(),
       user: {
         _id: currentUser.uid,
@@ -89,6 +97,10 @@ function RoomScreen({route, navigation}) {
     }
     if (isAudio) {
       MessageObj['audio'] = imageVideoUrl;
+    }
+
+    if (isLocation) {
+      MessageObj['location'] = imageVideoUrl;
     }
 
     if (isVideo) {
@@ -108,7 +120,12 @@ function RoomScreen({route, navigation}) {
       .set(
         {
           latestMessage: {
-            text: isImage || isVideo || isAudio ? 'Document Upload' : text,
+            text:
+              isImage || isVideo || isAudio
+                ? 'Document Upload'
+                : isLocation
+                ? 'Location Send'
+                : text,
             createdAt: new Date().getTime(),
           },
         },
@@ -149,6 +166,57 @@ function RoomScreen({route, navigation}) {
     // Stop listening for updates whenever the component unmounts
     return () => messagesListener();
   }, []);
+
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      (async () => {
+        const granted = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+        );
+
+        if (granted === 'granted') {
+          setGeoPermissions('granted');
+        } else if (granted === 'denied') {
+          setGeoPermissions('denied');
+        } else if (granted === 'never_ask_again') {
+          setGeoPermissions('never_ask_again');
+        } else {
+          setGeoPermissions('denied');
+        }
+      })();
+    });
+    return unsubscribe;
+  }, [navigation]);
+
+  const sendCurrentUserLocation = () => {
+    console.log('start send message');
+    Geolocation.getCurrentPosition(
+      position => {
+        console.log(`${position.coords.latitude},${position.coords.longitude}`);
+        handleSend(
+          messages,
+          false,
+          `${position.coords.latitude},${position.coords.longitude}`,
+          false,
+          false,
+          true,
+        );
+      },
+      error => {
+        Toast.show(
+          error && error.message
+            ? error.message
+            : 'mack sure your geo location is active',
+          Toast.LONG,
+        );
+      },
+      {
+        timeout: 0,
+        maximumAge: 0,
+        enableHighAccuracy: true,
+      },
+    );
+  };
 
   // useEffect(() => {
   //   if (!recording && recordingTime) {
@@ -208,10 +276,10 @@ function RoomScreen({route, navigation}) {
         uploadImage(response['assets'][0].uri);
       }
     });
+  };
 
-  }
   const tackAPhotoWithPermission = async () => {
-    if(Platform.OS == "android") {
+    if (Platform.OS == 'android') {
       try {
         const granted = await PermissionsAndroid.request(
           PermissionsAndroid.PERMISSIONS.CAMERA,
@@ -231,10 +299,7 @@ function RoomScreen({route, navigation}) {
     } else {
       tackPhoto();
     }
-  
   };
-
-
 
   const uploadImage = async imageData => {
     if (imageData) {
@@ -263,7 +328,7 @@ function RoomScreen({route, navigation}) {
               .ref(`${route.params.thread.name}/images/${filename}`)
               .getDownloadURL()
               .then(downloadUrl => {
-                handleSend(messages, true, downloadUrl, false, false);
+                handleSend(messages, true, downloadUrl, false, false, false);
                 console.log(downloadUrl, 'DDDDDDDDDDDDDDDDDDDDDDDDDDDD');
               });
 
@@ -386,6 +451,7 @@ function RoomScreen({route, navigation}) {
                             downalodVideoFirebaseUrl,
                             thumbnailImage,
                             false,
+                            false,
                           );
                           console.log(
                             messages,
@@ -402,8 +468,9 @@ function RoomScreen({route, navigation}) {
                 }
 
                 // console.log(downloadUrl, 'DDDDDDDDDDDDDDDDDDDDDDDDDDDD');
-              }).catch(e => {
-                console.log(e, "ERROR VIDEO UPLOAD");
+              })
+              .catch(e => {
+                console.log(e, 'ERROR VIDEO UPLOAD');
               });
 
             console.log('Image uploaded to the bucket!');
@@ -461,9 +528,9 @@ function RoomScreen({route, navigation}) {
     audioRecorderPlayer.removeRecordBackListener();
     console.log(result, '1234567890');
     console.log('REACAORD DOING STOP IT');
-    if (Platform.OS == "android" && result.includes('com.rnchatfirestoreapp')) {
+    if (Platform.OS == 'android' && result.includes('com.rnchatfirestoreapp')) {
       uploadAudio(result);
-    } else if (Platform.OS == 'ios' && result.includes(".m4a")) {
+    } else if (Platform.OS == 'ios' && result.includes('.m4a')) {
       uploadAudio(result);
     }
   };
@@ -493,7 +560,7 @@ function RoomScreen({route, navigation}) {
               .ref(`${route.params.thread.name}/audios/${filename}`)
               .getDownloadURL()
               .then(downloadUrl => {
-                handleSend(messages, false, downloadUrl, false, true);
+                handleSend(messages, false, downloadUrl, false, true, false);
                 console.log(downloadUrl, 'DDDDDDDDDDDDDDDDDDDDDDDDDDDD');
               });
 
@@ -531,20 +598,95 @@ function RoomScreen({route, navigation}) {
   };
 
   function renderBubble(props) {
+    if (props.currentMessage.location) {
+      console.log(
+        props.currentMessage,
+        props.currentMessage.location,
+        parseFloat(props.currentMessage.location.split(',')[0]),
+      );
+    }
+
     return (
-      <Bubble
-        {...props}
-        wrapperStyle={{
-          right: {
-            backgroundColor: '#0d9eff',
-          },
-        }}
-        textStyle={{
-          right: {
-            color: '#fff',
-          },
-        }}
-      />
+      <>
+        {props.currentMessage.location ? (
+          <TouchableOpacity
+            onPress={() => {
+              showMapModal(props.currentMessage.location);
+            }}
+            style={{backgroundColor: '#0d9eff', padding: 5, borderRadius: 5}}>
+            <View
+              style={{
+                // zIndex: 1000,
+                height: Dimensions.get('window').width / 2.5,
+                width: Dimensions.get('window').width / 1.5,
+                borderRadius: 10,
+                paddingVertical: 10,
+                // justifyContent: 'flex-end',
+                // alignItems: 'center',
+              }}>
+              <View
+                style={{
+                  zIndex: 100000000000000,
+                  left: Dimensions.get('window').width / 1.5 / 2 - 15,
+                  top: Dimensions.get('window').width / 2.5 / 2 - 25,
+                }}>
+                <Avatar.Text
+                  size={40}
+                  label={props.currentMessage.user.name[0].toUpperCase()}
+                />
+              </View>
+              <MapView
+                style={{
+                  borderRadius: 10,
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  // zIndex: 1000,
+                }}
+                initialRegion={{
+                  latitude: props.currentMessage.location
+                    ? parseFloat(props.currentMessage.location.split(',')[0])
+                    : 37.78825,
+                  longitude: props.currentMessage.location
+                    ? parseFloat(props.currentMessage.location.split(',')[1])
+                    : -122.4324,
+                  latitudeDelta: 0.001,
+                  longitudeDelta: 0.001,
+                }}
+                customMapStyle={mapStyle}>
+                <Marker
+                  draggable
+                  coordinate={{
+                    latitude: 37.78825,
+                    longitude: -122.4324,
+                  }}
+                  onDragEnd={e =>
+                    alert(JSON.stringify(e.nativeEvent.coordinate))
+                  }
+                  title={'Test Marker'}
+                  description={'This is a description of the marker'}
+                />
+              </MapView>
+            </View>
+          </TouchableOpacity>
+        ) : (
+          <Bubble
+            {...props}
+            wrapperStyle={{
+              right: {
+                backgroundColor: '#0d9eff',
+              },
+            }}
+            textStyle={{
+              right: {
+                color: '#ffffff',
+              },
+            }}
+          />
+        )}
+      </>
     );
   }
 
@@ -746,6 +888,13 @@ function RoomScreen({route, navigation}) {
           }}
         />
         <Appbar.Content title={route.params.thread.name} />
+        <TouchableOpacity
+          onPress={() => {
+            sendCurrentUserLocation();
+          }}
+          style={{marginRight: 10}}>
+          <FontAwesome name="location-arrow" color="#FFFFFF" size={25} />
+        </TouchableOpacity>
 
         <Appbar.Action
           icon="file-send"
@@ -828,6 +977,55 @@ function RoomScreen({route, navigation}) {
         </Modal>
       ) : null}
 
+      {mapModal ? (
+        <Modal transparent={true} visible={true}>
+          <Ionicons
+            name="close"
+            color="#000000"
+            size={35}
+            style={{
+              position: 'absolute',
+              left: '87%',
+              top: 40,
+              zIndex: 100000000,
+            }}
+            onPress={() => {
+              showMapModal(false);
+            }}
+          />
+
+          <View
+            style={{
+              ...StyleSheet.absoluteFillObject,
+              height: Dimensions.get('window').height,
+              width: Dimensions.get('window').width,
+              justifyContent: 'flex-start',
+              alignItems: 'stretch',
+            }}>
+            <MapView
+              style={{
+                ...StyleSheet.absoluteFillObject,
+              }}
+              region={{
+                latitude: mapModal
+                  ? parseFloat(mapModal.split(',')[0])
+                  : 37.78825,
+                longitude: mapModal
+                  ? parseFloat(mapModal.split(',')[1])
+                  : -122.4324,
+                latitudeDelta: 0.015,
+                longitudeDelta: 0.0121,
+              }}>
+              <Marker
+                coordinate={{latitude: 6.40607, longitude: 3.40735}}
+                title="Emi School of Engineering"
+                description="This is where the magic happens!"
+              />
+            </MapView>
+          </View>
+        </Modal>
+      ) : null}
+
       <GiftedChat
         messages={messages}
         onSend={handleSend}
@@ -877,3 +1075,84 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
 });
+
+const mapStyle = [
+  {elementType: 'geometry', stylers: [{color: '#242f3e'}]},
+  {elementType: 'labels.text.fill', stylers: [{color: '#746855'}]},
+  {elementType: 'labels.text.stroke', stylers: [{color: '#242f3e'}]},
+  {
+    featureType: 'administrative.locality',
+    elementType: 'labels.text.fill',
+    stylers: [{color: '#d59563'}],
+  },
+  {
+    featureType: 'poi',
+    elementType: 'labels.text.fill',
+    stylers: [{color: '#d59563'}],
+  },
+  {
+    featureType: 'poi.park',
+    elementType: 'geometry',
+    stylers: [{color: '#263c3f'}],
+  },
+  {
+    featureType: 'poi.park',
+    elementType: 'labels.text.fill',
+    stylers: [{color: '#6b9a76'}],
+  },
+  {
+    featureType: 'road',
+    elementType: 'geometry',
+    stylers: [{color: '#38414e'}],
+  },
+  {
+    featureType: 'road',
+    elementType: 'geometry.stroke',
+    stylers: [{color: '#212a37'}],
+  },
+  {
+    featureType: 'road',
+    elementType: 'labels.text.fill',
+    stylers: [{color: '#9ca5b3'}],
+  },
+  {
+    featureType: 'road.highway',
+    elementType: 'geometry',
+    stylers: [{color: '#746855'}],
+  },
+  {
+    featureType: 'road.highway',
+    elementType: 'geometry.stroke',
+    stylers: [{color: '#1f2835'}],
+  },
+  {
+    featureType: 'road.highway',
+    elementType: 'labels.text.fill',
+    stylers: [{color: '#f3d19c'}],
+  },
+  {
+    featureType: 'transit',
+    elementType: 'geometry',
+    stylers: [{color: '#2f3948'}],
+  },
+  {
+    featureType: 'transit.station',
+    elementType: 'labels.text.fill',
+    stylers: [{color: '#d59563'}],
+  },
+  {
+    featureType: 'water',
+    elementType: 'geometry',
+    stylers: [{color: '#17263c'}],
+  },
+  {
+    featureType: 'water',
+    elementType: 'labels.text.fill',
+    stylers: [{color: '#515c6d'}],
+  },
+  {
+    featureType: 'water',
+    elementType: 'labels.text.stroke',
+    stylers: [{color: '#17263c'}],
+  },
+];
