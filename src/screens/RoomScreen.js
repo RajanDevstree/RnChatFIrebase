@@ -182,46 +182,59 @@ function RoomScreen({route, navigation}) {
     });
   };
 
-  const tackAPhoto = async () => {
-    try {
-      const granted = await PermissionsAndroid.request(
-        PermissionsAndroid.PERMISSIONS.CAMERA,
-        {
-          title: 'App Camera Permission',
-          message: 'App needs access to your camera ',
-        },
-      );
-      if (granted === PermissionsAndroid.RESULTS.GRANTED) {
-        setSendFolder(false);
-        console.log('TACK A PHOTO IMAGES');
-        let options = {
-          storageOptions: {
-            skipBackup: true,
-            path: 'images',
-          },
-        };
-        launchCamera(options, response => {
-          console.log('Response = ', response);
+  const tackPhoto = () => {
+    setSendFolder(false);
+    console.log('TACK A PHOTO IMAGES');
+    let options = {
+      storageOptions: {
+        skipBackup: true,
+        path: 'images',
+      },
+    };
+    launchCamera(options, response => {
+      console.log('Response = ', response);
 
-          if (response.didCancel) {
-            console.log('User cancelled image picker');
-          } else if (response.error) {
-            console.log('ImagePicker Error: ', response.error);
-          } else if (response.customButton) {
-            console.log('User tapped custom button: ', response.customButton);
-            alert(response.customButton);
-          } else {
-            setImage(response['assets'][0].uri);
-            uploadImage(response['assets'][0].uri);
-          }
-        });
+      if (response.didCancel) {
+        console.log('User cancelled image picker');
+      } else if (response.error) {
+        console.log('ImagePicker Error: ', response.error);
+      } else if (response.errorCode) {
+        console.log('ImagePicker Error: ', response.errorCode);
+      } else if (response.customButton) {
+        console.log('User tapped custom button: ', response.customButton);
+        alert(response.customButton);
       } else {
-        console.log('Camera permission denied');
+        setImage(response['assets'][0].uri);
+        uploadImage(response['assets'][0].uri);
       }
-    } catch (err) {
-      console.warn(err);
+    });
+
+  }
+  const tackAPhotoWithPermission = async () => {
+    if(Platform.OS == "android") {
+      try {
+        const granted = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.CAMERA,
+          {
+            title: 'App Camera Permission',
+            message: 'App needs access to your camera ',
+          },
+        );
+        if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+          tackPhoto();
+        } else {
+          console.log('Camera permission denied');
+        }
+      } catch (err) {
+        console.warn(err);
+      }
+    } else {
+      tackPhoto();
     }
+  
   };
+
+
 
   const uploadImage = async imageData => {
     if (imageData) {
@@ -314,7 +327,7 @@ function RoomScreen({route, navigation}) {
         new Date().getTime() +
         '';
       const uploadUri =
-        Platform.OS === 'ios' ? VideoData.replace('file://', '') : VideoData;
+        Platform.OS === 'ios' ? VideoData.replace('file:///', '') : VideoData;
       const task = storage()
         .ref(`${route.params.thread.name}/videos/${filename}`)
         .putFile(uploadUri);
@@ -333,6 +346,7 @@ function RoomScreen({route, navigation}) {
               .ref(`${route.params.thread.name}/videos/${filename}`)
               .getDownloadURL()
               .then(downloadUrl => {
+                console.log(downloadUrl, thumbnaiDeviceUrl);
                 if (!thumbnaiDeviceUrl.includes('https://')) {
                   const thumbnailFileName =
                     thumbnaiDeviceUrl.substring(
@@ -388,6 +402,8 @@ function RoomScreen({route, navigation}) {
                 }
 
                 // console.log(downloadUrl, 'DDDDDDDDDDDDDDDDDDDDDDDDDDDD');
+              }).catch(e => {
+                console.log(e, "ERROR VIDEO UPLOAD");
               });
 
             console.log('Image uploaded to the bucket!');
@@ -445,7 +461,9 @@ function RoomScreen({route, navigation}) {
     audioRecorderPlayer.removeRecordBackListener();
     console.log(result, '1234567890');
     console.log('REACAORD DOING STOP IT');
-    if (result.includes('com.rnchatfirestoreapp')) {
+    if (Platform.OS == "android" && result.includes('com.rnchatfirestoreapp')) {
+      uploadAudio(result);
+    } else if (Platform.OS == 'ios' && result.includes(".m4a")) {
       uploadAudio(result);
     }
   };
@@ -457,7 +475,7 @@ function RoomScreen({route, navigation}) {
       );
       const uploadUri =
         Platform.OS === 'ios'
-          ? fileLocalPathAudio.replace('file:////', '')
+          ? fileLocalPathAudio.replace('file:///', '')
           : fileLocalPathAudio;
       const task = storage()
         .ref(`${route.params.thread.name}/audios/${filename}`)
@@ -627,7 +645,7 @@ function RoomScreen({route, navigation}) {
       <Menu.Item
         icon="camera"
         onPress={() => {
-          tackAPhoto();
+          tackAPhotoWithPermission();
         }}
         title="Camera"
       />

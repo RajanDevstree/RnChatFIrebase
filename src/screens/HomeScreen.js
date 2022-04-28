@@ -19,7 +19,6 @@ import {launchCamera, launchImageLibrary} from 'react-native-image-picker';
 import storage from '@react-native-firebase/storage';
 import * as Progress from 'react-native-progress';
 import Video from 'react-native-video';
-import videoData from '../video/test.mp4';
 import {createThumbnail} from 'react-native-create-thumbnail';
 import AudioRecorderPlayer, {
   AVEncoderAudioQualityIOSType,
@@ -30,7 +29,7 @@ import AudioRecorderPlayer, {
 } from 'react-native-audio-recorder-player';
 import RNFetchBlob from 'rn-fetch-blob';
 
-export default function HomeScreen({navigation}) {
+ function HomeScreen({navigation}) {
   useStatsBar('light-content');
   const videoPlayer = React.useRef();
   var audioRecorderPlayer = new AudioRecorderPlayer();
@@ -339,6 +338,7 @@ export default function HomeScreen({navigation}) {
     </View>
   );
 }
+export default HomeScreen;
 
 const styles = StyleSheet.create({
   container: {
