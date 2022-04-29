@@ -1,3 +1,10 @@
-{"assets": [{"bitrate": 1436709, "duration": 6, "fileName": "11708", "fileSize": 1134251, "height": 640, "type": "video/mp4", "uri": "content://media/external/video/media/11708", "width": 304}]}
+## Application Run:
+```
+1.npm i
 
-https://firebasestorage.googleapis.com/v0/b/ioschattestthenremove.appspot.com/o/tytyty%2Faudios%2F1651058459548audio.mp3?alt=media&token=cf8b6657-5c0f-40bb-bb8d-983339307d82
+2. cd ios && pod install && cd .. (only in ios)
+
+search "GOOGLE_MAP_API_KEY" in /ios folder /android folder and replace with google map api key: 
+
+3.npm run android or npm run ios
+```

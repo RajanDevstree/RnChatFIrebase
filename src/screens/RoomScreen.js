@@ -170,19 +170,43 @@ function RoomScreen({route, navigation}) {
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
       (async () => {
-        const granted = await PermissionsAndroid.request(
-          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-        );
-
-        if (granted === 'granted') {
+        if (Platform.OS == "android") {
+          const granted = await PermissionsAndroid.request(
+            PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+          );
+  
+          if (granted === 'granted') {
+            setGeoPermissions('granted');
+          } else if (granted === 'denied') {
+            setGeoPermissions('denied');
+          } else if (granted === 'never_ask_again') {
+            setGeoPermissions('never_ask_again');
+          } else {
+            setGeoPermissions('denied');
+          }
+  
+        } else {
+        let requestLocation = await Geolocation.requestAuthorization('whenInUse');
+        if (requestLocation.trim() == 'granted') {
           setGeoPermissions('granted');
-        } else if (granted === 'denied') {
+        } else if (requestLocation.trim() == 'denied') {
           setGeoPermissions('denied');
-        } else if (granted === 'never_ask_again') {
-          setGeoPermissions('never_ask_again');
+        } else if (requestLocation.trim() == 'restricted') {
+          setGeoPermissions('restricted');
+        } else if (requestLocation.trim() == 'disabled') {
+          setGeoPermissions('disabled');
         } else {
           setGeoPermissions('denied');
+
         }
+
+        }
+
+    
+
+
+
+
       })();
     });
     return unsubscribe;
@@ -218,11 +242,6 @@ function RoomScreen({route, navigation}) {
     );
   };
 
-  // useEffect(() => {
-  //   if (!recording && recordingTime) {
-  //     onStopRecord();
-  //   }
-  // }, [recording, recordingTime]);
 
   const selectImage = () => {
     setSendFolder(false);

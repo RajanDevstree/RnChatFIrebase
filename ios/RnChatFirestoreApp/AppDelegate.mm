@@ -4,6 +4,7 @@
 #import <React/RCTBundleURLProvider.h>
 #import <React/RCTRootView.h>
 #import <Firebase.h>
+#import <GoogleMaps/GoogleMaps.h>
 
 #import <React/RCTAppSetupUtils.h>
 
@@ -30,6 +31,7 @@
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
 {
+  [GMSServices provideAPIKey:@"GOOGLE_MAP_API_KEY"];
   [FIRApp configure];
   RCTAppSetupPrepareApp(application);
 
